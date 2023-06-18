@@ -1,23 +1,29 @@
 module Card where
 
-import Data.Ix (Ix)
+import Data.Bits (Bits (shiftL, zeroBits, (.&.), (.|.)), FiniteBits (countTrailingZeros))
+import Data.Ix (Ix (index))
+import Data.List (foldl', unfoldr)
+import Data.Word (Word64)
 
-data Suite = D | S | H | C deriving (Eq, Ord, Enum, Ix)
+data Suit = Diamond | Spade | Heart | Club deriving (Eq, Ord, Enum, Bounded, Ix)
 
-instance Show Suite where
-  show D = "d"
-  show S = "s"
-  show H = "h"
-  show C = "c"
+instance Show Suit where
+  show Diamond = "d"
+  show Spade = "s"
+  show Heart = "h"
+  show Club = "c"
 
-suiteFromChar :: Char -> Suite
-suiteFromChar 'd' = D
-suiteFromChar 's' = S
-suiteFromChar 'h' = H
-suiteFromChar 'c' = C
+suiteFromChar :: Char -> Suit
+suiteFromChar 'd' = Diamond
+suiteFromChar 's' = Spade
+suiteFromChar 'h' = Heart
+suiteFromChar 'c' = Club
 suiteFromChar _ = undefined
 
-data Numero = A | K | Q | J | T | N9 | N8 | N7 | N6 | N5 | N4 | N3 | N2 deriving (Eq, Ord, Enum, Ix)
+suits :: [Suit]
+suits = [Diamond, Spade, Heart, Club]
+
+data Numero = A | K | Q | J | T | N9 | N8 | N7 | N6 | N5 | N4 | N3 | N2 deriving (Eq, Ord, Enum, Bounded, Ix)
 
 instance Show Numero where
   show A = "A"
@@ -50,11 +56,34 @@ numeroFromChar '3' = N3
 numeroFromChar '2' = N2
 numeroFromChar _ = undefined
 
-data Card = Card {suite :: Suite, num :: Numero} deriving (Eq)
+data Card = Card {suite :: Suit, num :: Numero} deriving (Eq, Ix, Ord, Bounded)
 
-fromString :: String -> Card
-fromString [n, s] = Card (suiteFromChar s) (numeroFromChar n)
-fromString _ = undefined
+cardFromString :: String -> Card
+cardFromString [n, s] = Card (suiteFromChar s) (numeroFromChar n)
+cardFromString _ = undefined
 
 instance Show Card where
-  show (Card suite num) = show suite ++ show num
+  show (Card suite num) = show num ++ show suite
+
+cardIndex :: Card -> Int
+cardIndex = index (minBound, maxBound)
+
+allCards :: [Card]
+allCards = [Card suit num | suit <- [minBound .. maxBound], num <- [minBound .. maxBound]]
+
+cardsCount :: Int
+cardsCount = 13 * 4 -- length allCards
+
+type CardBitmap = Word64
+
+cardBitmapFromCard :: Card -> CardBitmap
+cardBitmapFromCard card = shiftL 1 (cardIndex card)
+
+cardBitmapFromCards :: [Card] -> CardBitmap
+cardBitmapFromCards cards = foldl' (.|.) zeroBits $ map cardBitmapFromCard cards
+
+cardsFromCardBitmap :: CardBitmap -> [Card]
+cardsFromCardBitmap = unfoldr f
+  where
+    f 0 = Nothing
+    f i = Just (allCards !! countTrailingZeros i, i .&. (i - 1))

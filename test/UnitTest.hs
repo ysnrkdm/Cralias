@@ -1,15 +1,20 @@
 module UnitTest where
 
-import Card (fromString)
-import Debug.Trace (trace)
-import GameSetting
+import Card (cardFromString)
+import GameSetting (GameSetting (..), StreetSetting (..))
 import GameTree
-import Player
-import Round
-import Situation
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( NodeAction (RoundBegin),
+    Result (Action),
+    gametree,
+  )
+import Player (Player (OOP))
+import Round (Round (Flop))
+import Situation (Situation (..))
+import Test.Tasty ()
+import Test.Tasty.HUnit (Assertion, (@=?))
+import Tree (Tree (Node, childNodes, node))
 
+streetSettingFT :: StreetSetting
 streetSettingFT =
   StreetSetting
     { betSizes = [0.5, 0.66],
@@ -18,6 +23,7 @@ streetSettingFT =
       allIn = False
     }
 
+streetSettingR :: StreetSetting
 streetSettingR =
   StreetSetting
     { betSizes = [0.5, 0.66],
@@ -26,6 +32,7 @@ streetSettingR =
       allIn = False
     }
 
+gameSetting :: GameSetting
 gameSetting =
   GameSetting
     { flopIp = streetSettingFT,
@@ -34,12 +41,15 @@ gameSetting =
       flopOop = streetSettingFT,
       turnOop = streetSettingFT,
       riverOop = streetSettingR,
-      maxRaiseTimes = 3,
+      maxRaiseTimes = 2,
       smallBlind = 0.5,
       bigBlind = 1,
-      allInThreshold = 0.67
+      allInThreshold = 0.67,
+      ipRange = [],
+      oopRange = []
     }
 
+preflopSituation :: Situation
 preflopSituation =
   Situation
     { Situation.round = Flop,
@@ -47,12 +57,13 @@ preflopSituation =
       oopcommit = 3,
       restcommit = 3.5,
       stack = 100,
-      deck = map Card.fromString ["Ad", "8h", "5s"],
+      deck = map cardFromString ["Ad", "8h", "5s"],
       player = OOP,
-      raiseTimesRemaining = 3
+      raiseTimesRemaining = 2
     }
 
-unit_base1 = trace ("\n" ++ show actual) $ expected @=? actual
+unit_base1 :: Assertion
+unit_base1 = expected @=? actual
   where
-    actual = (gametree gameSetting preflopSituation)
+    actual = gametree gameSetting preflopSituation
     expected = (Node {node = (preflopSituation, Action GameTree.RoundBegin), childNodes = []})

@@ -1,6 +1,7 @@
 module GameSetting where
 
 import Player (Player (IP, OOP))
+import Range (Range)
 import Round (Round (Flop, Preflop, River, Turn))
 import Situation (Situation (player, round))
 
@@ -28,7 +29,9 @@ data GameSetting = GameSetting
     maxRaiseTimes :: Int,
     smallBlind :: Double,
     bigBlind :: Double,
-    allInThreshold :: Double
+    allInThreshold :: Double,
+    ipRange :: Range,
+    oopRange :: Range
   }
 
 _streetSetting :: GameSetting -> Round -> Player -> StreetSetting
@@ -42,3 +45,7 @@ _streetSetting g River OOP = riverOop g
 
 streetSetting :: GameSetting -> Situation -> StreetSetting
 streetSetting g s = _streetSetting g (Situation.round s) (player s)
+
+playerRange :: GameSetting -> Player -> Range
+playerRange g IP = ipRange g
+playerRange g OOP = oopRange g

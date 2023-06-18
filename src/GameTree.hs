@@ -2,20 +2,12 @@ module GameTree where
 
 import Card (Card)
 import Data.List (nub, sort)
-import Debug.Trace (trace)
 import FlowUtil ((|>))
 import GameSetting (BetType (BetType, RaiseType), GameSetting (allInThreshold, bigBlind, smallBlind), StreetSetting (allIn), sizesFromBetType, streetSetting)
 import Player (Player (IP, OOP), nextPlayer)
 import Round (Round (River))
 import Situation (Situation (deck, ipcommit, oopcommit, player, raiseTimesRemaining, round, stack), initialEffectiveStack, playersCommit, withIpCommitIncrement, withNextPlayer, withNextRound, withOopCommitIncrement, withRaiseLimitDecrement)
-
-data Tree n = Node {node :: n, childNodes :: [Tree n]} deriving (Eq)
-
-instance (Show n) => Show (Tree n) where
-  show = showAtLvl 0
-    where
-      showAtLvl lvl (Node n children) = "" ++ indent lvl ++ show n ++ "\n" ++ concatMap (showAtLvl (lvl + 1)) children
-      indent lvl = concat $ concat $ replicate lvl ["|-"]
+import Tree (Tree, reptree)
 
 data NodeAction = RoundBegin | Begin | Bet {size :: Double} | Raise {size :: Double} | Check | Call | Fold deriving (Show, Eq)
 
@@ -36,18 +28,6 @@ data Result
         winner :: Player
       }
   deriving (Show, Eq)
-
-redtree :: (t -> t1 -> t2) -> (t2 -> t1 -> t1) -> t1 -> Tree t -> t2
-redtree f g a Node {node = n, childNodes = c} = f n (redtree' f g a c)
-  where
-    redtree' f g a (hd : rest) = g (redtree f g a hd) (redtree' f g a rest)
-    redtree' f g a [] = a
-
-maptree :: (t -> b) -> Tree t -> Tree b
-maptree f = redtree (Node . f) (:) []
-
-reptree :: (t -> [t]) -> t -> Tree t
-reptree f a = Node a (map (reptree f) (f a))
 
 type NodeType = (Situation, Result)
 
@@ -133,7 +113,7 @@ expandPossibleActions g s prevAction TCall = case Situation.round s of
     where
       (payoffs, peaceGetbackVec) = payoffsAndPeaceGetbackVec s
   _ -> [(withNextRound s, Chance (Situation.deck s) (player s == OOP))]
-expandPossibleActions g s prevAction TRaise = map (\v -> (nextSituation v, Action $ Raise v)) $ trace ("raise betSizes: " ++ show betSizes) betSizes
+expandPossibleActions g s prevAction TRaise = map (\v -> (nextSituation v, Action $ Raise v)) betSizes
   where
     betSizes = if raiseTimesRemaining s == 0 then [] else possibleBetSizes g s RaiseType
     nextSituation v = withNextPlayer $
