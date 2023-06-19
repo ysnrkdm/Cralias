@@ -1,5 +1,7 @@
 module CfrNode where
 
+import Data.IntMap (IntMap, (!))
+
 alpha :: Double
 alpha = 1.5
 
@@ -14,7 +16,9 @@ theta = 0.9
 
 type NumbersOnCards = [Double]
 
-data CfrNode = CfrNode {regret :: NumbersOnCards, ev :: NumbersOnCards, payoffs :: NumbersOnCards} deriving (Eq, Show)
+type CardToNumberMap = IntMap Double
+
+data CfrNode = CfrNode {regret :: NumbersOnCards, ev :: NumbersOnCards, payoffs :: CardToNumberMap} deriving (Eq, Show)
 
 averageStrategy :: CfrNode -> NumbersOnCards
 averageStrategy cfrNode = [0.0]
